@@ -1,14 +1,21 @@
 name: Deploy backend
-on: { push: { branches: [ "main" ] } }
+on:
+  push:
+    branches: [ "main" ]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
-        with: { node-version: 'lts/*' }
+        with:
+          node-version: 'lts/*'
+
       - run: npm ci
       - run: npm run build
+
       - name: Upload backend
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -17,6 +24,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           source: "dist/**,package.json,package-lock.json,prisma/**"
           target: "/var/www/justicrm/backend"
+
       - name: Configure & start
         uses: appleboy/ssh-action@v1.2.0
         with:
