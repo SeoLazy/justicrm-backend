@@ -16,7 +16,7 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Upload backend
+      - name: Upload backend bundle
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -25,17 +25,26 @@ jobs:
           source: "dist/**,package.json,package-lock.json,prisma/**"
           target: "/var/www/justicrm/backend"
 
-      - name: Configure & start
+      - name: Configure, migrate, seed, start
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            set -e
             cd /var/www/justicrm/backend
+            # записываем .env
             cat > .env << 'EOF'
             ${{ secrets.ENV_FILE }}
             EOF
-            npm ci --omit=dev
+            # 1) ставим зависимости с dev (нужно для seed.ts)
+            npm ci
+            # 2) миграции
             npx prisma migrate deploy
+            # 3) сидим админа
+            npm run seed
+            # 4) чистим dev-зависимости
+            npm prune --omit=dev
+            # 5) перезапуск/запуск pm2
             pm2 restart justicrm-backend || pm2 start dist/server.js --name justicrm-backend
