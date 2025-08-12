@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 
 import authRoutes from './routes/auth';
 import bitrixRoutes from './routes/bitrix';
+// @ts-ignore
 import bitrixContactsRoutes from './routes/bitrixContacts';
 
 const app = express();
