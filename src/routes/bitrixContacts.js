@@ -2,6 +2,8 @@
 import { Router } from 'express';
 import { bitrix } from '../bitrixClient.js';
 
+const log = (...args) => console.log('[BX/contacts]', ...args);
+
 const r = Router();
 
 // Утилиты
@@ -24,6 +26,9 @@ r.get('/', async (req, res) => {
 
         const lmt = Math.min(Math.max(parseInt(limit, 10) || 24, 1), 50);
         const st = parseInt(start, 10) || 0;
+
+        log('incoming query', req.query);
+        log('computed limits', { limit: lmt, start: st });
 
         // Базовый фильтр
         const filter = {};
@@ -57,8 +62,9 @@ r.get('/', async (req, res) => {
             ? { ...filter, ...searchFilter }
             : filter;
 
-        // Запрашиваем Bitrix
-        const result = await bitrix('crm.contact.list', {
+        log('effective filter', finalFilter);
+
+        const params = {
             filter: finalFilter,
             select: [
                 'ID','NAME','LAST_NAME','SECOND_NAME',
@@ -67,13 +73,19 @@ r.get('/', async (req, res) => {
             ],
             order: { 'DATE_CREATE': 'DESC' },
             start: st,
-        });
+        };
+        log('calling crm.contact.list with', params);
+        const result = await bitrix('crm.contact.list', params);
+
+        log('bitrix result type', Array.isArray(result) ? 'array' : typeof result, 'keys', result && Object.keys(result));
 
         // Bitrix возвращает массив; next может прийти в result.next или во внешнем поле
         const items = Array.isArray(result) ? result : (result?.items ?? []);
         const next = (typeof result?.next === 'number')
             ? result.next
             : (items.length === lmt ? st + lmt : null);
+
+        log('items fetched', { count: Array.isArray(items) ? items.length : 0, next });
 
         // Дополнительные фильтры по наличию email/phone — на бэке (надёжно)
         let filtered = items;
@@ -86,6 +98,7 @@ r.get('/', async (req, res) => {
 
         res.json({ ok: true, items: filtered, next });
     } catch (e) {
+        console.error('[BX/contacts] error', e && (e.stack || e.message || e));
         res.status(500).json({ ok: false, error: e.message });
     }
 });
