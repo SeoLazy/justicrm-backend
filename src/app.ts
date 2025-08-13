@@ -20,5 +20,6 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/auth', authRoutes);
 app.use('/bitrix', bitrixRoutes);
 app.use('/api/bitrix/clients', bitrixContactsRoutes);
+app.use('/api/bitrix/contacts', bitrixContactsRoutes);
 
 export default app;
