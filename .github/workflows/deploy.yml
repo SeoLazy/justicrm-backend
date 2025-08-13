@@ -32,19 +32,55 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            set -e
+            set -euo pipefail
             cd /var/www/justicrm/backend
-            # записываем .env
-            cat > .env << 'EOF'
+
+            # 1) Write .env from GitHub secret
+            cat > .env <<'EOF'
             ${{ secrets.ENV_FILE }}
             EOF
-            # 1) ставим зависимости с dev (нужно для seed.ts)
-            npm ci
-            # 2) миграции
-            npx prisma migrate deploy
-            # 3) сидим админа
-            npm run seed
-            # 4) чистим dev-зависимости
-            npm prune --omit=dev
-            # 5) перезапуск/запуск pm2
-            pm2 restart justicrm-backend || pm2 start dist/server.js --name justicrm-backend
+            chmod 600 .env
+
+            # 2) Export env for this session (so npm/pm2 see it) and set defaults
+            set -a
+            . ./.env || true
+            set +a
+            : "${PORT:=3000}"
+            : "${NODE_ENV:=production}"
+
+            # 3) Ensure clean install area
+            rm -rf node_modules
+
+            # 4) Install dependencies (prefer lockfile)
+            if [ -f package-lock.json ]; then
+              npm ci --no-audit --no-fund
+            else
+              npm install --no-audit --no-fund
+            fi
+
+            # 5) Migrate (if Prisma present)
+            if [ -d prisma ] || [ -f prisma/schema.prisma ]; then
+              npx prisma migrate deploy
+            fi
+
+            # 6) Seed (only if script exists)
+            if npm run | grep -qE '^  seed'; then
+              npm run seed
+            fi
+
+            # 7) Drop dev deps for runtime image
+            npm prune --omit=dev || true
+
+            # 8) Ensure pm2 exists
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm i -g pm2
+            fi
+
+            # 9) Start/Restart under pm2 with updated env
+            if pm2 describe justicrm-backend >/dev/null 2>&1; then
+              PORT="$PORT" NODE_ENV="$NODE_ENV" pm2 restart justicrm-backend --update-env
+            else
+              PORT="$PORT" NODE_ENV="$NODE_ENV" pm2 start dist/server.js --name justicrm-backend --update-env
+            fi
+
+            pm2 save
