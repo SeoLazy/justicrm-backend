@@ -39,7 +39,7 @@ router.get('/clients', async (req, res) => {
                         DATE_CREATE: '',
                         TYPE_ID: '',
                         SOURCE_ID: '',
-                        UF_*: {}
+                        'UF_*': {}
                     }
                 ]
             });
