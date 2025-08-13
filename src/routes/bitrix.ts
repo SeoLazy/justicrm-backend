@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 const router = Router();
-const BASE = process.env.BITRIX_WEBHOOK_URL;
+const BASE = process.env.BITRIX_WEBHOOK;
 
 router.get('/user.current', async (_req, res) => {
     try {
