@@ -1,4 +1,4 @@
-// backend/routes/bitrixContacts.js
+// backend/routes/bitrixContacts.ts
 import { Router } from 'express';
 import { bitrix } from '../bitrixClient.js';
 
