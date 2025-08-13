@@ -6,7 +6,7 @@ import authRoutes from './routes/auth';
 import bitrixRoutes from './routes/bitrix';
 // @ts-ignore
 import bitrixContactsRoutes from './routes/bitrixContacts';
-import bitrixRouter from './bitrix';
+import bitrixRouter from './routes/bitrix';
 
 const app = express();
 
