@@ -68,6 +68,9 @@ jobs:
               npm install --no-audit --no-fund
             fi
 
+            # Ensure local binaries are available (ts-node, prisma, etc.)
+            export PATH="./node_modules/.bin:$PATH"
+
             # 5) Migrate (only if Prisma present AND DATABASE_URL set)
             if [ -d prisma ] || [ -f prisma/schema.prisma ]; then
               if [ -n "${DATABASE_URL:-}" ]; then
@@ -77,15 +80,23 @@ jobs:
               fi
             fi
 
-            # 6) Seed (только если скрипт есть и ts-node доступен, или есть prisma db seed)
+            # 6) Seed (run if script exists). Try prisma db seed first; fallback to ts-node; never fail deploy on seed.
             if npm run | grep -qE '^  seed'; then
-              if npx --yes ts-node -v >/dev/null 2>&1; then
-                npm run seed
-              elif npx --yes prisma -v >/dev/null 2>&1 && npx --yes prisma db seed >/dev/null 2>&1; then
-                echo "[INFO] Ran prisma db seed"
+              set +e
+              if [ -n "${DATABASE_URL:-}" ]; then
+                # Prefer Prisma's seeding (uses package.json->prisma.seed)
+                if npx prisma db seed; then
+                  echo "[INFO] Prisma seed completed"
+                elif command -v ts-node >/dev/null 2>&1; then
+                  echo "[INFO] Running ts-node seed fallback"
+                  ts-node prisma/seed.ts || echo "[WARN] ts-node seed failed (continuing)" >&2
+                else
+                  echo "[WARN] Skipping seed: ts-node not installed and prisma db seed not configured" >&2
+                fi
               else
-                echo "[WARN] Skipping seed: ts-node not available and prisma db seed not configured" >&2
+                echo "[WARN] Skipping seed: DATABASE_URL is empty" >&2
               fi
+              set -e
             fi
 
             # 7) Drop dev deps for runtime
