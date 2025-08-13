@@ -35,11 +35,21 @@ jobs:
             set -euo pipefail
             cd /var/www/justicrm/backend
 
-            # 1) Write .env from GitHub secret
+            # 1) Write .env from GitHub secret ENV_FILE
             cat > .env <<'EOF'
             ${{ secrets.ENV_FILE }}
             EOF
             chmod 600 .env
+
+            # 1.1) Ensure DATABASE_URL exists: if not present in ENV_FILE, append from separate secret
+            DBURL="${{ secrets.DATABASE_URL }}"
+            if ! grep -q '^DATABASE_URL=' .env; then
+              if [ -n "$DBURL" ]; then
+                echo "DATABASE_URL=$DBURL" >> .env
+              else
+                echo "[WARN] DATABASE_URL is not set; Prisma migrate/seed will be skipped" >&2
+              fi
+            fi
 
             # 2) Export env for this session (so npm/pm2 see it) and set defaults
             set -a
@@ -58,17 +68,25 @@ jobs:
               npm install --no-audit --no-fund
             fi
 
-            # 5) Migrate (if Prisma present)
+            # 5) Migrate (only if Prisma present AND DATABASE_URL set)
             if [ -d prisma ] || [ -f prisma/schema.prisma ]; then
-              npx prisma migrate deploy
+              if [ -n "${DATABASE_URL:-}" ]; then
+                npx prisma migrate deploy
+              else
+                echo "[WARN] Skipping Prisma migrate: DATABASE_URL is empty" >&2
+              fi
             fi
 
-            # 6) Seed (only if script exists)
+            # 6) Seed (only if script exists AND DATABASE_URL set)
             if npm run | grep -qE '^  seed'; then
-              npm run seed
+              if [ -n "${DATABASE_URL:-}" ]; then
+                npm run seed
+              else
+                echo "[WARN] Skipping seed: DATABASE_URL is empty" >&2
+              fi
             fi
 
-            # 7) Drop dev deps for runtime image
+            # 7) Drop dev deps for runtime
             npm prune --omit=dev || true
 
             # 8) Ensure pm2 exists
