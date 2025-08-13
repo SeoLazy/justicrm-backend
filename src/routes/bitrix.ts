@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 const router = Router();
-const BASE = process.env.BITRIX_WEBHOOK;
+const BASE = process.env.BITRIX_WEBHOOKK;
 
 router.get('/user.current', async (_req, res) => {
     try {
@@ -25,9 +25,9 @@ router.get('/clients', async (req, res) => {
         if (isNaN(start) || start < 0) start = 0;
 
         if (!BASE) {
-            return res.status(501).json({
+            return res.status(200).json({
                 mock: true,
-                result: [
+                items: [
                     {
                         ID: 1,
                         NAME: 'Demo',
@@ -38,10 +38,11 @@ router.get('/clients', async (req, res) => {
                         ASSIGNED_BY_ID: null,
                         DATE_CREATE: '',
                         TYPE_ID: '',
-                        SOURCE_ID: '',
-                        'UF_*': {}
+                        SOURCE_ID: ''
                     }
-                ]
+                ],
+                next: null,
+                total: 1
             });
         }
 
@@ -66,13 +67,8 @@ router.get('/clients', async (req, res) => {
             return res.status(502).json({ error: 'Invalid response from Bitrix' });
         }
 
-        const slicedResult = data.result.slice(0, limit);
-        const response = { ...data, result: slicedResult };
-        if (data.next !== undefined) {
-            response.next = data.next;
-        }
-
-        res.json(response);
+        const items = Array.isArray(data.result) ? data.result.slice(0, limit) : [];
+        return res.json({ items, next: data.next ?? null, total: items.length });
     } catch (e: any) {
         res.status(502).json({ error: 'Bitrix proxy failed', details: e?.message });
     }
