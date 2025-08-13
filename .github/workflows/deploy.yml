@@ -77,12 +77,14 @@ jobs:
               fi
             fi
 
-            # 6) Seed (only if script exists AND DATABASE_URL set)
+            # 6) Seed (только если скрипт есть и ts-node доступен, или есть prisma db seed)
             if npm run | grep -qE '^  seed'; then
-              if [ -n "${DATABASE_URL:-}" ]; then
+              if npx --yes ts-node -v >/dev/null 2>&1; then
                 npm run seed
+              elif npx --yes prisma -v >/dev/null 2>&1 && npx --yes prisma db seed >/dev/null 2>&1; then
+                echo "[INFO] Ran prisma db seed"
               else
-                echo "[WARN] Skipping seed: DATABASE_URL is empty" >&2
+                echo "[WARN] Skipping seed: ts-node not available and prisma db seed not configured" >&2
               fi
             fi
 
