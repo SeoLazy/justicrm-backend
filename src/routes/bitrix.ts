@@ -1,12 +1,13 @@
 import { Router } from 'express';
 
 const router = Router();
-const BASE = process.env.BITRIX_WEBHOOKK;
+const RAW_BASE = process.env.BITRIX_WEBHOOK_URL || process.env.BITRIX_WEBHOOK || '';
+const BASE = RAW_BASE ? (RAW_BASE.endsWith('/') ? RAW_BASE : RAW_BASE + '/') : '';
 
 router.get('/user.current', async (_req, res) => {
     try {
         if (!BASE) {
-            return res.status(501).json({ mock: true, result: { ID: 1, NAME: 'Demo', LAST_NAME: 'User' } });
+            return res.status(200).json({ mock: true, result: { ID: 1, NAME: 'Demo', LAST_NAME: 'User' } });
         }
         const r = await fetch(`${BASE}user.current.json`);
         const data = await r.json();
@@ -28,6 +29,20 @@ router.get('/clients', async (req, res) => {
             return res.status(200).json({
                 mock: true,
                 items: [
+                    {
+                        ID: 1,
+                        NAME: 'Demo',
+                        LAST_NAME: 'Client',
+                        SECOND_NAME: '',
+                        PHONE: [],
+                        EMAIL: [],
+                        ASSIGNED_BY_ID: null,
+                        DATE_CREATE: '',
+                        TYPE_ID: '',
+                        SOURCE_ID: ''
+                    }
+                ],
+                result: [
                     {
                         ID: 1,
                         NAME: 'Demo',
@@ -68,7 +83,7 @@ router.get('/clients', async (req, res) => {
         }
 
         const items = Array.isArray(data.result) ? data.result.slice(0, limit) : [];
-        return res.json({ items, next: data.next ?? null, total: items.length });
+        return res.json({ items, result: items, next: data.next ?? null, total: items.length });
     } catch (e: any) {
         res.status(502).json({ error: 'Bitrix proxy failed', details: e?.message });
     }
