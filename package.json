@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate": "prisma migrate deploy",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "prisma db seed"
   },
   "keywords": [],
   "author": "",
@@ -36,5 +36,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
