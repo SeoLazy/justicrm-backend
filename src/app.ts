@@ -6,6 +6,7 @@ import authRoutes from './routes/auth';
 import bitrixRoutes from './routes/bitrix';
 // @ts-ignore
 import bitrixContactsRoutes from './routes/bitrixContacts';
+import bitrixRouter from './bitrix';
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.use(cors({
 }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/bitrix/health', (_req, res) => res.json({ ok: true }));
+app.use('/api/bitrix', bitrixRouter);
 app.use('/auth', authRoutes);
 app.use('/bitrix', bitrixRoutes);
 app.use('/api/bitrix/clients', bitrixContactsRoutes);
