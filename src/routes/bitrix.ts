@@ -26,39 +26,7 @@ router.get('/clients', async (req, res) => {
         if (isNaN(start) || start < 0) start = 0;
 
         if (!BASE) {
-            return res.status(200).json({
-                mock: true,
-                items: [
-                    {
-                        ID: 1,
-                        NAME: 'Demo',
-                        LAST_NAME: 'Client',
-                        SECOND_NAME: '',
-                        PHONE: [],
-                        EMAIL: [],
-                        ASSIGNED_BY_ID: null,
-                        DATE_CREATE: '',
-                        TYPE_ID: '',
-                        SOURCE_ID: ''
-                    }
-                ],
-                result: [
-                    {
-                        ID: 1,
-                        NAME: 'Demo',
-                        LAST_NAME: 'Client',
-                        SECOND_NAME: '',
-                        PHONE: [],
-                        EMAIL: [],
-                        ASSIGNED_BY_ID: null,
-                        DATE_CREATE: '',
-                        TYPE_ID: '',
-                        SOURCE_ID: ''
-                    }
-                ],
-                next: null,
-                total: 1
-            });
+            return res.status(200).json({ mock: true, success: true, items: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], result: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], data: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], count: 1, total: 1, next: null });
         }
 
         const params = new URLSearchParams();
@@ -83,7 +51,7 @@ router.get('/clients', async (req, res) => {
         }
 
         const items = Array.isArray(data.result) ? data.result.slice(0, limit) : [];
-        return res.json({ items, result: items, next: data.next ?? null, total: items.length });
+        return res.json({ success: true, items, result: items, data: items, count: items.length, total: items.length, next: data.next ?? null });
     } catch (e: any) {
         res.status(502).json({ error: 'Bitrix proxy failed', details: e?.message });
     }
