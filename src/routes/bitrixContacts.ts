@@ -1,7 +1,7 @@
 // backend/routes/bitrixContacts.ts
 import { Router, Request, Response } from 'express';
 
-// === Minimal Bitrix client using built-in fetch (Node >= 18) ===
+// ===  Minimal Bitrix client using built-in fetch (Node >= 18) ===
 const BASE = process.env.BITRIX_WEBHOOK || '';
 if (!BASE) {
   // eslint-disable-next-line no-console
