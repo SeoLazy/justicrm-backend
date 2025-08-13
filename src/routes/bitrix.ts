@@ -19,14 +19,34 @@ router.get('/user.current', async (_req, res) => {
 
 router.get('/clients', async (req, res) => {
     try {
+        // disable cache to avoid 304 on the frontend while debugging
+        res.set('Cache-Control', 'no-store');
+
         let limit = parseInt(req.query.limit as string);
         let start = parseInt(req.query.start as string);
-        if (isNaN(limit) || limit < 1) limit = 24;
+        if (isNaN(limit) || limit < 1) limit = 24; // used only to trim the Bitrix result if needed
         if (limit > 50) limit = 50;
         if (isNaN(start) || start < 0) start = 0;
 
         if (!BASE) {
-            return res.status(200).json({ mock: true, success: true, items: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], result: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], data: [ { ID: 1, NAME: 'Demo', LAST_NAME: 'Client', SECOND_NAME: '', PHONE: [], EMAIL: [], ASSIGNED_BY_ID: null, DATE_CREATE: '', TYPE_ID: '', SOURCE_ID: '' } ], count: 1, total: 1, next: null });
+            // Return Bitrix-like shape
+            return res.status(200).json({
+                result: [
+                    {
+                        ID: '1',
+                        NAME: 'Demo',
+                        LAST_NAME: 'Client',
+                        SECOND_NAME: null,
+                        PHONE: [],
+                        EMAIL: [],
+                        ASSIGNED_BY_ID: null,
+                        DATE_CREATE: new Date().toISOString(),
+                        TYPE_ID: 'CLIENT',
+                        SOURCE_ID: 'OTHER'
+                    }
+                ],
+                next: null
+            });
         }
 
         const params = new URLSearchParams();
@@ -46,14 +66,18 @@ router.get('/clients', async (req, res) => {
         const r = await fetch(`${BASE}crm.contact.list.json?${params.toString()}`);
         const data = await r.json();
 
-        if (!data.result || !Array.isArray(data.result)) {
-            return res.status(502).json({ error: 'Invalid response from Bitrix' });
+        if (!data || !Array.isArray(data.result)) {
+            return res.status(502).json({ error: 'Invalid response from Bitrix', raw: data });
         }
 
-        const items = Array.isArray(data.result) ? data.result.slice(0, limit) : [];
-        return res.json({ success: true, items, result: items, data: items, count: items.length, total: items.length, next: data.next ?? null });
+        // optionally trim to limit to mimic page size, but keep Bitrix shape
+        if (data.result.length > limit) {
+            data.result = data.result.slice(0, limit);
+        }
+
+        return res.json(data);
     } catch (e: any) {
-        res.status(502).json({ error: 'Bitrix proxy failed', details: e?.message });
+        return res.status(502).json({ error: 'Bitrix proxy failed', details: e?.response?.data || e?.message });
     }
 });
 
