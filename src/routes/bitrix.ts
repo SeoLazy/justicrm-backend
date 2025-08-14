@@ -10,7 +10,7 @@ router.get('/user.current', async (_req, res) => {
             return res.status(200).json({ mock: true, result: { ID: 1, NAME: 'Demo', LAST_NAME: 'User' } });
         }
         const r = await fetch(`${BASE}user.current.json`);
-        const data = await r.json();
+        const data = await res.json();
         res.json(data);
     } catch (e: any) {
         res.status(502).json({ error: 'Bitrix proxy failed', details: e?.message });
