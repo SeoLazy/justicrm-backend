@@ -106,7 +106,7 @@ router.get('/contact/:id', async (req, res) => {
     }
 
     const params = new URLSearchParams();
-    params.append('ID', id);
+    params.append('id', id);
     const r = await fetch(`${BASE}crm.contact.get.json?${params.toString()}`);
     const data = await r.json();
     if (!data || !data.result) return res.status(502).json({ error: 'Invalid Bitrix response', raw: data });
@@ -136,7 +136,7 @@ router.get('/company/:id', async (req, res) => {
     }
 
     const params = new URLSearchParams();
-    params.append('ID', id);
+    params.append('id', id);
     const r = await fetch(`${BASE}crm.company.get.json?${params.toString()}`);
     const data = await r.json();
     if (!data || !data.result) return res.status(502).json({ error: 'Invalid Bitrix response', raw: data });
